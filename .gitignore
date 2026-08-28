@@ -1,0 +1,9 @@
+# Boards and images live outside the repo (--data). Never commit them.
+data/
+*.log
+export/
+exports/
+__pycache__/
+*.pyc
+.DS_Store
+*.iconset/

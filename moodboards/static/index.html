@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mood Board Builder</title>
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐕</text></svg>">
+</head>
+<body>
+  <div id="app">
+    <aside class="rail" id="rail"></aside>
+    <main id="view"></main>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { registerView, route } from '/static/app.js';
+    import { mountRail } from '/static/rail.js';
+    import { mountDashboard } from '/static/dashboard-view.js';
+    import { mountBoard } from '/static/board-view.js';
+    import { mountZone } from '/static/zone-view.js';
+    import { mountMosaic } from '/static/mosaic-view.js';
+
+    registerView('dashboard', mountDashboard);
+    registerView('board', mountBoard);
+    registerView('zone', mountZone);
+    registerView('mosaic', mountMosaic);
+
+    mountRail();
+    if (!location.hash) location.hash = '#/';
+    route();
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Drop this service into an existing docker-compose.yml, or run it on its own
+# with:  docker compose -f docker/docker-compose.example.yml up -d
+#
+# NOTE: there is no login. Anyone who can reach the port can view, edit and
+# delete every board. That is fine on a trusted LAN. If you put it behind a
+# reverse proxy on a public hostname, add an access list / basic auth there —
+# Nginx Proxy Manager can do this under the proxy host's Access List tab.
+
+services:
+  moodboards:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    # image: moodboards:latest      # or build once and pin an image
+    container_name: moodboards
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    volumes:
+      # Left side is where your boards live on the host. Back this up.
+      - ./moodboards-data:/data
+    environment:
+      - TZ=Etc/UTC
