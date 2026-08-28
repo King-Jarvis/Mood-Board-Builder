@@ -16,9 +16,16 @@ var app = Application.currentApplication();
 app.includeStandardAdditions = true;
 
 // Where the repo is checked out, relative to your home folder.
-var REPO_REL = 'Documents/Claude Code/Mood-Board-Builder';
+//
+// Deliberately NOT under ~/Documents, ~/Desktop or ~/Downloads. macOS TCC
+// gates those, and a background (LSUIElement) app cannot show the consent
+// prompt -- `fileExistsAtPath` still returns true there, so the failure looks
+// like a missing module rather than a permissions problem.
+var REPO_REL = 'Mood-Board-Builder';
 var PORT = 8765;
-var OUT_LOG = '/tmp/house-mood-board.out';
+var OUT_LOG = '/tmp/mood-board-builder.out';
+// The server writes its own log beside the DATA, not the repo.
+var SERVER_LOG = ObjC.unwrap($.NSHomeDirectory()) + '/.moodboards/moodboards.log';
 
 var HOME = ObjC.unwrap($.NSHomeDirectory());
 var DIR = HOME + '/' + REPO_REL;
@@ -70,7 +77,7 @@ function isOurs(port) {
 function portFromLog() {
   try {
     var found = sh(
-      "/usr/bin/tail -n 40 " + JSON.stringify(DIR + '/launcher.log') +
+      "/usr/bin/tail -n 40 " + JSON.stringify(SERVER_LOG) +
       " | /usr/bin/grep -o 'http://127\\.0\\.0\\.1:[0-9]*/'" +
       " | /usr/bin/tail -n 1 | /usr/bin/sed 's/[^0-9]*//;s|/||'");
     var n = parseInt(found, 10);
@@ -107,10 +114,19 @@ function startServer() {
   var fh = $.NSFileHandle.fileHandleForWritingAtPath(OUT_LOG);
   fh.seekToEndOfFile;
 
+  // Bootstrap the package by absolute path rather than relying on the working
+  // directory or PYTHONPATH. Under NSTask, JXA's assignments to
+  // `currentDirectoryPath`, `currentDirectoryURL` and `environment` all
+  // silently failed -- the child reported "No module named moodboards" even
+  // though the identical command worked by hand. Only launchPath and arguments
+  // reliably take, so everything the child needs goes in the arguments.
+  var boot = 'import sys;sys.path.insert(0,' + JSON.stringify(DIR) + ');'
+    + 'import moodboards.__main__ as m;'
+    + 'sys.argv=["moodboards","--port","' + PORT + '"];m.main()';
+
   var task = $.NSTask.alloc.init;
   task.launchPath = '/usr/bin/python3';
-  task.arguments = ['-u', '-m', 'moodboards', '--port', String(PORT)];
-  task.currentDirectoryPath = DIR;
+  task.arguments = ['-u', '-c', boot];
   task.standardOutput = fh;
   task.standardError = fh;
   task.standardInput = $.NSFileHandle.fileHandleWithNullDevice;
