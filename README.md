@@ -13,7 +13,42 @@ kitchen's palette, in the arrangement you'd actually walk through.
 Each board chooses its own word for its zones, so a house says *Rooms* and a
 van build says *Areas*.
 
-## Running it
+## Install
+
+### Local (macOS)
+
+Builds a Desktop app, starts the dashboard and opens it in your browser.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/King-Jarvis/Mood-Board-Builder/main/install/install-local.command -o ~/Downloads/install-local.command && bash ~/Downloads/install-local.command
+```
+
+Code goes to `~/Mood-Board-Builder`, boards to `~/.moodboards`. Re-run any time
+to update — your boards are untouched.
+
+*(The install directory is deliberately not under `~/Documents`, `~/Desktop` or
+`~/Downloads`: macOS TCC gates those, and a background app can't show the
+consent prompt — it fails as a confusing "No module named moodboards".)*
+
+### Network (Linux / NAS)
+
+Adds a `moodboards` service to your `docker-compose.yml`, builds it, and starts
+it. Run it from the directory your compose file lives in.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/King-Jarvis/Mood-Board-Builder/main/install/install-network.sh -o install-network.sh && bash install-network.sh
+```
+
+Then open `http://<host-address>:8765` from any machine on the network.
+
+It backs up your compose file first, matches the indentation the file already
+uses, validates with `docker compose config` before starting anything, and
+restores the backup if the edit doesn't validate. Re-running is safe: it skips
+the compose edit if the service is already there.
+
+Override with `STACK_DIR=/path/to/stack PORT=9000 bash install-network.sh`.
+
+## Running it manually
 
 Python 3.8+ standard library only. No `pip install`, no Node, no build step.
 

@@ -5,8 +5,25 @@ description: Start, use or debug the local Mood Board Builder — a dashboard fo
 
 # Mood Board Builder
 
-Repo: `~/Mood-Board-Builder` (github.com/King-Jarvis/Mood-Board-Builder)
-Data: `~/.moodboards` — **outside the repo**, never commit or delete it.
+Repo: github.com/King-Jarvis/Mood-Board-Builder
+Local install: `~/Mood-Board-Builder` · Data: `~/.moodboards` (outside the
+repo; never commit or delete it).
+
+## Installing
+
+Local (macOS) — builds the Desktop app and opens the dashboard:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/King-Jarvis/Mood-Board-Builder/main/install/install-local.command -o ~/Downloads/install-local.command && bash ~/Downloads/install-local.command
+```
+
+Network (Linux/NAS) — run from the directory holding docker-compose.yml:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/King-Jarvis/Mood-Board-Builder/main/install/install-network.sh -o install-network.sh && bash install-network.sh
+```
+
+Both are re-runnable and leave existing boards alone.
 
 ## Running it
 
