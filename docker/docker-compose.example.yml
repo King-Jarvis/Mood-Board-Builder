@@ -1,23 +1,24 @@
-# Drop this service into an existing docker-compose.yml, or run it on its own
-# with:  docker compose -f docker/docker-compose.example.yml up -d
+# Mood Board Builder — service block for an existing docker-compose.yml.
 #
-# NOTE: there is no login. Anyone who can reach the port can view, edit and
-# delete every board. That is fine on a trusted LAN. If you put it behind a
-# reverse proxy on a public hostname, add an access list / basic auth there —
-# Nginx Proxy Manager can do this under the proxy host's Access List tab.
+# Follows the same shape as the other services on the host: a plain port
+# mapping, a data directory beside the compose file, and restart last. Once up,
+# the board is at http://10.191.191.33:8765 — the same way you reach the rest.
+#
+# !! There is no login. Anyone who can reach that address can view, edit and
+#    permanently delete every board. Fine on a trusted LAN. If Nginx Proxy
+#    Manager ever fronts it on a public hostname, add an Access List there.
 
-services:
   moodboards:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    # image: moodboards:latest      # or build once and pin an image
+      context: ./media/HouseMoodBoard/docker-build
+      dockerfile: Dockerfile
     container_name: moodboards
-    restart: unless-stopped
     ports:
       - "8765:8765"
-    volumes:
-      # Left side is where your boards live on the host. Back this up.
-      - ./moodboards-data:/data
     environment:
-      - TZ=Etc/UTC
+      - GENERIC_TIMEZONE=America/Chicago
+      - MOODBOARDS_DATA=/data
+    volumes:
+      # Boards and images. Back this up — it is the irreplaceable part.
+      - ./moodboards-data:/data
+    restart: unless-stopped

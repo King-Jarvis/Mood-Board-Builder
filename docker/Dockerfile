@@ -10,6 +10,6 @@ VOLUME ["/data"]
 ENV MOODBOARDS_DATA=/data
 EXPOSE 8765
 
-# 0.0.0.0 so the container is reachable from the host network. There is no
-# authentication — see the README before exposing this beyond a trusted LAN.
+# 0.0.0.0 inside the container; the host-side binding is done by compose.
+# There is no authentication — see the README before exposing this.
 CMD ["python", "-m", "moodboards", "--host", "0.0.0.0", "--port", "8765", "--data", "/data"]

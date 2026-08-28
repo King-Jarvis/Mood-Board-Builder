@@ -34,8 +34,25 @@ like any other folder; it is plain JSON and original-resolution image files.
 
 ### Docker
 
+`docker/docker-compose.example.yml` is a service block to paste into an
+existing `docker-compose.yml`. Plain port mapping, a data directory beside the
+compose file, nothing to install:
+
+```yaml
+  moodboards:
+    build:
+      context: ./path/to/repo
+      dockerfile: docker/Dockerfile
+    container_name: moodboards
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./moodboards-data:/data
+    restart: unless-stopped
+```
+
 ```bash
-docker compose -f docker/docker-compose.example.yml up -d
+docker compose up -d --build moodboards
 ```
 
 Mount a host directory at `/data`. The image contains no data.
