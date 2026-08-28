@@ -10,9 +10,6 @@ View** reflows every zone's images back into its own footprint, so adjacency
 becomes visible — the living room's warmth sitting directly against the
 kitchen's palette, in the arrangement you'd actually walk through.
 
-Each board chooses its own word for its zones, so a house says *Rooms* and a
-van build says *Areas*.
-
 ## Install
 
 ### Local (macOS)
