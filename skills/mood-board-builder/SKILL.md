@@ -23,7 +23,11 @@ Network (Linux/NAS) — run from the directory holding docker-compose.yml:
 curl -fsSL https://raw.githubusercontent.com/King-Jarvis/Mood-Board-Builder/main/install/install-network.sh -o install-network.sh && bash install-network.sh
 ```
 
-Both are re-runnable and leave existing boards alone.
+Both are re-runnable and leave existing boards alone. Re-running the network
+installer is also how you update it: the code is bind-mounted, so a code change
+is a container **restart**, not an image rebuild — only a Dockerfile change
+forces a rebuild. It tracks this in `.moodboards-deployed` beside the compose
+file.
 
 ## Running it
 

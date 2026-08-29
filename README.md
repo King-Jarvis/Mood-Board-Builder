@@ -40,8 +40,23 @@ Then open `http://<host-address>:8765` from any machine on the network.
 
 It backs up your compose file first, matches the indentation the file already
 uses, validates with `docker compose config` before starting anything, and
-restores the backup if the edit doesn't validate. Re-running is safe: it skips
-the compose edit if the service is already there.
+restores the backup if the edit doesn't validate.
+
+**Updating is just re-running it.** The application code is bind-mounted from
+the host rather than baked into the image, so the installer fetches `main`,
+works out what actually changed, and does the cheapest correct thing:
+
+| What changed | What it does | Roughly |
+|---|---|---|
+| Application code | `restart` | a second |
+| The Dockerfile | `up -d --build` | a normal image build |
+| Nothing | nothing | instant |
+| Container stopped | `up -d` | a moment |
+
+It records the deployed code and Dockerfile hashes in `.moodboards-deployed`
+beside the compose file. An install made before this change is upgraded in
+place: the installer adds the code mount to the existing service block (backed
+up and validated the same way).
 
 Override with `STACK_DIR=/path/to/stack PORT=9000 bash install-network.sh`.
 

@@ -1,24 +1,25 @@
 # Mood Board Builder — service block for an existing docker-compose.yml.
 #
-# Follows the same shape as the other services on the host: a plain port
-# mapping, a data directory beside the compose file, and restart last. Once up,
-# the board is at http://10.191.191.33:8765 — the same way you reach the rest.
+# The code is bind-mounted from the host, so updating it is a restart rather
+# than an image rebuild. The image only needs rebuilding when the Dockerfile
+# itself changes.
 #
-# !! There is no login. Anyone who can reach that address can view, edit and
-#    permanently delete every board. Fine on a trusted LAN. If Nginx Proxy
-#    Manager ever fronts it on a public hostname, add an Access List there.
+# !! There is no login. Anyone who can reach this port can view, edit and
+#    permanently delete every board. Fine on a trusted LAN; if a reverse proxy
+#    ever fronts it publicly, add an access list there.
 
   moodboards:
     build:
-      context: ./media/HouseMoodBoard/docker-build
+      context: ./moodboards-app
       dockerfile: Dockerfile
     container_name: moodboards
     ports:
       - "8765:8765"
     environment:
-      - GENERIC_TIMEZONE=America/Chicago
       - MOODBOARDS_DATA=/data
     volumes:
       # Boards and images. Back this up — it is the irreplaceable part.
       - ./moodboards-data:/data
+      # The application code. Updating it needs only a restart.
+      - ./moodboards-app/moodboards:/app/moodboards:ro
     restart: unless-stopped

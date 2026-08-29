@@ -90,7 +90,42 @@ info "data dir:      $STACK_DIR/$DATA_SUBDIR (yours; back this up)"
 say "Wiring it into compose"
 
 if grep -qE "^[[:space:]]*${SERVICE}:[[:space:]]*$" "$COMPOSE"; then
-  info "service '$SERVICE' already present — leaving the compose file alone"
+  if grep -q "${APP_SUBDIR}/moodboards:/app/moodboards" "$COMPOSE"; then
+    info "service '$SERVICE' already present and up to date"
+  else
+    # Installed before the code was bind-mounted. Add the mount so future
+    # updates are a restart instead of an image rebuild.
+    BACKUP="$COMPOSE.bak.$(date +%Y%m%d-%H%M%S)"
+    cp "$COMPOSE" "$BACKUP"
+    info "adding the code mount to the existing service (backup: $BACKUP)"
+    awk -v svc="$SERVICE" -v app="$APP_SUBDIR" '
+      # Track entry into the service block by its indentation.
+      match($0, "^[[:space:]]*" svc ":[[:space:]]*$") {
+        insvc = 1; match($0, /^[[:space:]]*/); svcind = RLENGTH; print; next
+      }
+      # A key at the same indent as the service name ends the block.
+      insvc && /^[[:space:]]*[A-Za-z0-9_.-]+:[[:space:]]*$/ {
+        match($0, /^[[:space:]]*/)
+        if (RLENGTH <= svcind) insvc = 0
+      }
+      insvc && /^[[:space:]]*volumes:[[:space:]]*$/ {
+        print
+        match($0, /^[[:space:]]*/)
+        printf "%*s- ./%s/moodboards:/app/moodboards:ro\n", RLENGTH + 2, "", app
+        next
+      }
+      { print }
+    ' "$COMPOSE" > "$COMPOSE.new" && mv "$COMPOSE.new" "$COMPOSE"
+
+    if ! (cd "$STACK_DIR" && $DC config -q >/dev/null 2>&1); then
+      cp "$BACKUP" "$COMPOSE"
+      warn "couldn't add the code mount automatically — restored $BACKUP"
+      warn "add this line under the service's volumes: to get fast updates:"
+      warn "    - ./${APP_SUBDIR}/moodboards:/app/moodboards:ro"
+    else
+      info "code mount added (compose validates)"
+    fi
+  fi
 else
   BACKUP="$COMPOSE.bak.$(date +%Y%m%d-%H%M%S)"
   cp "$COMPOSE" "$BACKUP"
@@ -120,6 +155,7 @@ else
     printf '%s    - MOODBOARDS_DATA=/data\n' "$INDENT"
     printf '%s  volumes:\n'             "$INDENT"
     printf '%s    - ./%s:/data\n'       "$INDENT" "$DATA_SUBDIR"
+    printf '%s    - ./%s/moodboards:/app/moodboards:ro\n' "$INDENT" "$APP_SUBDIR"
     printf '%s  restart: unless-stopped\n' "$INDENT"
   } >> "$COMPOSE"
 
@@ -138,6 +174,7 @@ ${INDENT}  ports:
 ${INDENT}    - \"${PORT}:8765\"
 ${INDENT}  volumes:
 ${INDENT}    - ./${DATA_SUBDIR}:/data
+${INDENT}    - ./${APP_SUBDIR}/moodboards:/app/moodboards:ro
 ${INDENT}  restart: unless-stopped"
   fi
   info "added service '$SERVICE' (compose file validates)"
@@ -145,9 +182,45 @@ fi
 
 # -- build and start ---------------------------------------------------------
 
-say "Building and starting"
+say "Deciding what needs to happen"
 cd "$STACK_DIR"
-$DC up -d --build "$SERVICE" || die "docker compose failed. See: $DC logs $SERVICE"
+
+# The code is bind-mounted, so a code change only needs a restart. The image
+# only has to be rebuilt when the Dockerfile changes (or it doesn't exist yet).
+hash_of() { find "$1" -type f -exec shasum {} \; 2>/dev/null | awk '{print $1}' | sort | shasum | cut -d' ' -f1; }
+
+STAMP="$STACK_DIR/.moodboards-deployed"
+CODE_HASH="$(hash_of "$BUILD_DIR/moodboards")"
+FILE_HASH="$(shasum "$BUILD_DIR/Dockerfile" | cut -d' ' -f1)"
+OLD_CODE=""; OLD_FILE=""
+[ -f "$STAMP" ] && . "$STAMP" 2>/dev/null || true
+OLD_CODE="${OLD_CODE:-}"; OLD_FILE="${OLD_FILE:-}"
+
+IMAGE_EXISTS=no
+$DC images -q "$SERVICE" 2>/dev/null | grep -q . && IMAGE_EXISTS=yes
+RUNNING=no
+[ -n "$($DC ps -q "$SERVICE" 2>/dev/null)" ] && RUNNING=yes
+
+if [ "$IMAGE_EXISTS" = no ] || [ "$FILE_HASH" != "$OLD_FILE" ]; then
+  ACTION=build
+  [ "$IMAGE_EXISTS" = no ] && REASON="no image yet" || REASON="Dockerfile changed"
+elif [ "$RUNNING" = no ]; then
+  ACTION=start;   REASON="container not running"
+elif [ "$CODE_HASH" != "$OLD_CODE" ]; then
+  ACTION=restart; REASON="code changed"
+else
+  ACTION=none;    REASON="already up to date"
+fi
+info "$REASON -> $ACTION"
+
+case "$ACTION" in
+  build)   $DC up -d --build "$SERVICE" || die "docker compose build failed. See: $DC logs $SERVICE" ;;
+  start)   $DC up -d "$SERVICE"         || die "docker compose up failed. See: $DC logs $SERVICE" ;;
+  restart) $DC restart "$SERVICE"       || die "docker compose restart failed. See: $DC logs $SERVICE" ;;
+  none)    : ;;
+esac
+
+printf 'OLD_CODE=%s\nOLD_FILE=%s\n' "$CODE_HASH" "$FILE_HASH" > "$STAMP"
 
 HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 [ -n "${HOST_IP:-}" ] || HOST_IP="$(hostname -i 2>/dev/null | awk '{print $1}')" || true
@@ -171,8 +244,11 @@ cat <<EOF
   Code        $BUILD_DIR
   Logs        $DC logs -f $SERVICE
 
-  Update later by re-running this installer, then:
-      cd $STACK_DIR && $DC up -d --build $SERVICE
+  To update: just re-run this installer. It fetches main, notices what
+  actually changed, and does the cheapest correct thing --
+      code changed      -> restart   (about a second)
+      Dockerfile changed-> rebuild
+      nothing changed   -> nothing
 
   !! There is no login. Anyone who can reach http://$HOST_IP:$PORT can view,
      edit and permanently delete every board. That is fine on a trusted LAN.
