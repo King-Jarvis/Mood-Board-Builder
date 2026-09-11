@@ -10,6 +10,38 @@ View** reflows every zone's images back into its own footprint, so adjacency
 becomes visible — the living room's warmth sitting directly against the
 kitchen's palette, in the arrangement you'd actually walk through.
 
+## What it looks like
+
+Every board carries its own vocabulary — rooms over a floor plan, areas on a
+blank canvas — and the dashboard counts how far each one has got.
+
+![The boards screen](docs/screenshots/01-boards.png)
+
+Drop in a floor plan and drag a zone over each room. Colour, footprint and
+image count sit on the plan itself, so the board doubles as a progress map.
+
+![Zones drawn over a floor plan](docs/screenshots/02-plan-zones.png)
+
+Inside a zone: paste pin links on the left, the shortlist in the middle, and on
+the right a live preview of those images reflowed into that room's real
+footprint. The palette is read back out of the images.
+
+![Curating one room](docs/screenshots/03-room-curation.png)
+
+Mosaic View does that for every zone at once, and exports the result as one PNG.
+
+![Mosaic View](docs/screenshots/04-mosaic.png)
+
+Turn the plan back on underneath, with labels, and each room's mood sits inside
+its own walls — adjacency you can hand to somebody.
+
+![Mosaic View composited over the plan](docs/screenshots/05-mosaic-over-plan.png)
+
+Without a background image the geometry is identical: zones are boxes on a
+blank canvas, and the labels follow the board.
+
+![Zones on a blank canvas](docs/screenshots/06-blank-canvas.png)
+
 ## Install
 
 ### Local (macOS)
